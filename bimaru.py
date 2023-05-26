@@ -52,6 +52,14 @@ class Board:
             if hint[2] != "W":
                 self.rows[hint[0]]-=1
                 self.columns[hint[1]]-=1
+                
+        for r,row in enumerate(self.rows):
+            if row == 0:
+                self.board[r] = np.full(10, "w")
+                
+        for c,col in enumerate(self.columns):
+            if col == 0:
+                self.board[:,c] = np.full(10, "w")
         
 
     def get_value(self, row: int, col: int) -> str:
@@ -124,8 +132,98 @@ class Board:
                     print(self.board[r][col], end=" ")
             print()
         print()
-    # TODO: outros metodos da classe
-
+    
+    def canPlace(self, row, col, ship, orientation=None):
+        
+        if orientation == None:
+            if (
+                
+                ship != 1 or
+                
+                ship not in self.ships or
+                
+                (self.board[row][col] != None and self.board[row][col] != "C") or
+                
+                any(
+                    (self.board[y][x] != None and self.board[y][x] != "w") 
+                    for y in range(row-1, row+2) 
+                    for x in range(col-1, col+2) 
+                    if (y, x) != (row, col)
+                    )
+                
+                ):
+                
+                return False
+        
+        elif orientation == "H":
+            if ( 
+                
+                ship not in self.ships or
+                
+                row > 9 or row < 0 or
+                col+ship-1 > 9 or col < 0 or
+                
+                (self.board[row][col+ship] != None and
+                self.board[row][col+ship] != "w") or
+                
+                (self.board[row][col-1] != None and
+                self.board[row][col-1] != "w") or
+                
+                (self.adjacent_vertical_values(row,col+ship) != ("w","w") and
+                self.adjacent_vertical_values(row,col+ship) != (None,"w") and
+                self.adjacent_vertical_values(row,col+ship) != ("w",None) and
+                self.adjacent_vertical_values(row,col+ship) != (None,None)) or
+                
+                (self.adjacent_vertical_values(row,col-1) != ("w","w") and
+                self.adjacent_vertical_values(row,col-1) != (None,"w") and
+                self.adjacent_vertical_values(row,col-1) != ("w",None) and
+                self.adjacent_vertical_values(row,col-1) != (None,None)) or
+                
+                (self.board[row][col] != None and self.board[row][col] != "T") or
+                
+                (self.board[row][col+ship-1] != None and self.board[row][col+ship-1] != "B") or
+                
+                any((self.board[row][col+i] != None and self.board[row][col+i] != "M") for i in range(1,ship-1))
+                
+                ):
+                
+                return False
+        
+        elif orientation == "V":
+            if ( 
+                
+                ship not in self.ships or
+                
+                row+ship-1 > 9 or row < 0 or
+                col > 9 or col < 0 or
+                
+                (self.board[row+ship][col] != None and
+                self.board[row+ship][col] != "w") or
+                
+                (self.board[row-1][col] != None and
+                self.board[row-1][col] != "w") or
+                
+                (self.adjacent_horizontal_values(row+ship,col) != ("w","w") and
+                self.adjacent_horizontal_values(row+ship,col) != (None,"w") and
+                self.adjacent_horizontal_values(row+ship,col) != ("w",None) and
+                self.adjacent_horizontal_values(row+ship,col) != (None,None)) or
+                
+                (self.adjacent_horizontal_values(row-1,col) != ("w","w") and
+                self.adjacent_horizontal_values(row-1,col) != (None,"w") and
+                self.adjacent_horizontal_values(row-1,col) != ("w",None) and
+                self.adjacent_horizontal_values(row-1,col) != (None,None)) or
+                
+                (self.board[row][col] != None and self.board[row][col] != "L") or
+                
+                (self.board[row+ship-1][col] != None and self.board[row+ship-1][col] != "R") or
+                
+                any((self.board[row+i][col] != None and self.board[row+i][col] != "M") for i in range(1,ship-1))
+                
+                ):
+                
+                return False
+            
+        return True
 
 class Bimaru(Problem):
     def __init__(self, board: Board):
@@ -177,13 +275,8 @@ class Bimaru(Problem):
 if __name__ == "__main__":
     
     board = Board.parse_instance()
-    bimaru = Bimaru(board)
-    list = bimaru.actions(BimaruState(board))
-    
-    for t in list:
-        board.board[t[0],t[1]]=t[2]
-        print(t)
-        board.print()
+    board.print()
+    print(board.adjacent_vertical_values(0,0))
             
     
 
