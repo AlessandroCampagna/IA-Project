@@ -238,11 +238,19 @@ class Bimaru(Problem):
 
         actionsList = []
         
-        for ri,r in enumerate(board.rows):
-            for ci,c in enumerate(board.columns):
-                
-                value = board.get_value(ri,ci)
-                
+        for row in range(10):
+            for col in range(10):
+                if board.board[row][col] == None:
+                    for ship in board.ships:
+                        if ship == 1:
+                            if board.canPlace(row,col,ship):
+                                actionsList.append((row,col,ship))
+                        else :
+                            if board.canPlace(row,col,ship,"H"):
+                                actionsList.append((row,col,ship,"H"))
+                            if board.canPlace(row,col,ship,"V"):
+                                actionsList.append((row,col,ship,"V"))
+                    
                 
                     
         return actionsList
@@ -253,7 +261,10 @@ class Bimaru(Problem):
         das presentes na lista obtida pela execução de
         self.actions(state)."""
         # TODO
-        pass
+        
+        board = state.board.copy()
+        
+        
 
     def goal_test(self, state: BimaruState):
         """Retorna True se e só se o estado passado como argumento é
