@@ -36,20 +36,12 @@ class BimaruState:
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
     
-    def __init__(self, rows, columns, hints, ships, board):
+    def __init__(self, rows, columns, ships, board):
         
         self._rows = rows
         self._columns = columns
-        self._hints = hints
         self._ships = ships
         self._board = board
-        
-        for hint in hints:
-            self._board[hint[0]][hint[1]] = hint[2]
-            
-            if hint[2] != "W":
-                self._rows[hint[0]]-=1
-                self._columns[hint[1]]-=1
         
 
     def get_value(self, row: int, col: int) -> str:
@@ -91,6 +83,8 @@ class Board:
         """
         from sys import stdin
         
+        board = np.full((10,10),None)
+        
          # Read the input
         lines = stdin.readlines()
 
@@ -106,8 +100,11 @@ class Board:
         for i in range(hintNum):
             hintLine = lines[3+i].split()
             hints[i] = ((int(hintLine[1]), int(hintLine[2]), hintLine[3]))
+            
+        for hint in hints:
+            board[hint[0]][hint[1]] = hint[2]
 
-        return Board(rows,columns,hints,[4,3,3,2,2,2,1,1,1,1],np.full((10,10),None))
+        return Board(rows,columns,[4,3,3,2,2,2,1,1,1,1],board)
     
     def output(self):
         for r in range(10):
@@ -131,12 +128,14 @@ class Board:
             return self.freeCell(row, col) or self.get_value(row, col) == "C"
         
         elif orientation == "H":
-            return ((self.freeCell(row, col) or self.get_value(row, col) == "L") and
+            return (self._rows[row] >= ship and 
+                    (self.freeCell(row, col) or self.get_value(row, col) == "L") and
                     (self.freeCell(row, col+ship-1) or self.get_value(row, col+ship-1) == "R") and
                     all(self.freeCell(row, c) or self.get_value(row, c) == "M" for c in range(col+1, col+ship-1)))
         
         elif orientation == "V":
-            return ((self.freeCell(row, col) or self.get_value(row, col) == "T") and
+            return (self._columns[col] >= ship and
+                    (self.freeCell(row, col) or self.get_value(row, col) == "T") and
                     (self.freeCell(row+ship-1, col) or self.get_value(row+ship-1, col) == "B") and
                     all(self.freeCell(r, col) or self.get_value(r, col) == "M" for r in range(row+1, row+ship-1)))
     
@@ -215,14 +214,13 @@ class Board:
     def copy(self):
         rows_copy = self._rows.copy()
         columns_copy = self._columns.copy()
-        hints_copy = self._hints.copy()
         ships_copy = self._ships.copy()
         board_copy = self._board.copy()
 
-        return Board(rows_copy, columns_copy, hints_copy, ships_copy, board_copy)
+        return Board(rows_copy, columns_copy, ships_copy, board_copy)
 
     def isGoal(self):
-        return self._ships == [] and self._rows == [0]*10 and self._columns == [0]*10 and all( not self.freeCell(r,c) for r in range(10) for c in range(10))
+        return self._ships == [] and all( self.get_value(r,c) != None for r in range(10) for c in range(10))
     
     def print(self):
 
@@ -244,7 +242,12 @@ class Board:
 class Bimaru(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
-        
+        for r in range(10):
+            if board._rows[r] <= 0:
+                board.fillRow(r)
+        for c in range(10):
+            if board._columns[c] <= 0:
+                board.fillColumn(c)
         
         super().__init__(BimaruState(board))
 
