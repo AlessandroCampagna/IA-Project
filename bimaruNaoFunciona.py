@@ -105,16 +105,14 @@ class Board:
         return Board(rows,columns,hints,[4,3,3,2,2,2,1,1,1,1],np.full((10,10),None))
     
     def output(self):
-        
         for r in range(10):
-            stdout.write("\n")
             for c in range(10):
-                if self.board[r][c]=="w" or self.board[r][c]==None:
-                    stdout.write(".")
+                if self.board[r][c] == "w" or self.board[r][c] is None:
+                    print(".", end="")
                 else:
-                    stdout.write(self.board[r][c])
+                    print(self.board[r][c], end="")
+            print()
 
-        print()
     
     def print(self):
 
@@ -405,5 +403,5 @@ if __name__ == "__main__":
     
     board = Board.parse_instance()
     bimaru = Bimaru(board)
-    depth_first_tree_search(bimaru).state.board.output()
+    board.output()
     
