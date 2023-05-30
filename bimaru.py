@@ -157,12 +157,12 @@ class Board:
     def fillRow(self,row):
         for c in range(10):
             if self.get_value(row, c) == None:
-                self.placeCell(row, c, "w")
+                self._board[row][c] = "w"
                 
     def fillColumn(self,col):
         for r in range(10):
             if self.get_value(r, col) == None:
-                self.placeCell(r, col, "w")
+                self._board[r][col] = "w"
 
     def placeCell(self, row, col, cell):
         self._board[row][col] = cell
@@ -220,7 +220,7 @@ class Board:
         return Board(rows_copy, columns_copy, ships_copy, board_copy)
 
     def isGoal(self):
-        return self._ships == [] and all( self.get_value(r,c) != None for r in range(10) for c in range(10))
+        return self._ships == [] 
     
     def print(self):
 
@@ -243,10 +243,10 @@ class Bimaru(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
         for r in range(10):
-            if board._rows[r] <= 0:
+            if board._rows[r] == 0:
                 board.fillRow(r)
         for c in range(10):
-            if board._columns[c] <= 0:
+            if board._columns[c] == 0:
                 board.fillColumn(c)
         
         super().__init__(BimaruState(board))
@@ -279,7 +279,9 @@ class Bimaru(Problem):
         
         board = state.board.copy()
         board.placeShip(action[0], action[1], action[2], action[3])
+        print(action)
         board.print()
+        print(board._ships)
         return BimaruState(board)
 
     def goal_test(self, state: BimaruState):
@@ -305,6 +307,11 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     
     board = Board.parse_instance()
+    board.print()
     bimaru = Bimaru(board)
+    board.print()
+    
+    
     goal = depth_first_tree_search(bimaru)
-    print(goal.solution())
+    print(goal.state.board.output())
+    
