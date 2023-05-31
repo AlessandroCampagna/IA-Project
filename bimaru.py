@@ -141,6 +141,19 @@ class Board:
     def freeShipPlacement(self, row, col, ship, orientation):
         
         if orientation == None:
+            return self.freeCell(row, col)
+        
+        elif orientation == "H":
+            return (self._rows[row] >= ship and 
+                    all(self.freeCell(row, c) for c in range(col, col+ship)))
+        
+        elif orientation == "V":
+            return (self._columns[col] >= ship and
+                    all(self.freeCell(r, col) for r in range(row, row+ship)))
+    
+    def hintedFreeShipPlacement(self, row, col, ship, orientation):
+        
+        if orientation == None:
             return self.freeCell(row, col) or self.get_value(row, col) == "C"
         
         elif orientation == "H":
@@ -155,6 +168,7 @@ class Board:
                     (self.freeCell(row+ship-1, col) or self.get_value(row+ship-1, col) == "B") and
                     all(self.freeCell(r, col) or self.get_value(r, col) == "M" for r in range(row+1, row+ship-1)))
     
+    
     def validSurrounding(self, row, col, ship, orientation):
         
         if orientation == None:
@@ -168,7 +182,11 @@ class Board:
         
     
     def canPlaceShip(self, row, col, ship, orientation):
-        return self.validSurrounding(row, col, ship, orientation) and self.freeShipPlacement(row, col, ship, orientation)
+        return self.validSurrounding(row, col, ship, orientation) and self.freeShipPlacement(row, col,ship,orientation)
+    
+    def hintedCanPlaceShip(self, row, col, ship, orientation):
+        return self.validSurrounding(row, col, ship, orientation) and self.hintedFreeShipPlacement(row, col, ship, orientation)
+        
     
     def fillRow(self,row):
         for c in range(10):
@@ -275,8 +293,37 @@ class Bimaru(Problem):
         partir do estado passado como argumento."""
         
         actionsList = []
-        ships = set(state.board._ships)
+        ships = sorted(set(state.board._ships), reverse=True)
         
+        for ship in ships:
+            for row in range(10):
+                for col in range(10):
+                    
+                    value = state.board.get_value(row, col)
+                    if ship == 1:
+                        if value == "C":
+                            actionsList.append((row,col,1,None))
+                    else:
+                        if value == "L" and state.board.hintedCanPlaceShip(row,col,ship,"H"):
+                            actionsList.append((row,col,ship,"H"))
+                        elif value == "R" and state.board.hintedCanPlaceShip(row,col-ship+1,ship,"H"):
+                            actionsList.append((row,col-ship+1,ship,"H"))
+                        elif value == "T" and state.board.hintedCanPlaceShip(row,col,ship,"V"):
+                            actionsList.append((row,col,ship,"V"))
+                        elif value == "B" and state.board.hintedCanPlaceShip(row-ship+1,col,ship,"V"):
+                            actionsList.append((row-ship+1,col,ship,"V"))
+                        elif value == "M":
+                            if ship == 3:
+                                if state.board.hintedCanPlaceShip(row,col-1,ship,"H"):
+                                    actionsList.append((row,col-1,ship,"H"))
+                                if state.board.hintedCanPlaceShip(row-1,col,ship,"V"):
+                                    actionsList.append((row-1,col,ship,"V"))
+                            if ship == 4:
+                                if state.board.hintedCanPlaceShip(row,col-2,ship,"H"):
+                                    actionsList.append((row,col-2,ship,"H"))
+                                if state.board.hintedCanPlaceShip(row-2,col,ship,"V"):
+                                    actionsList.append((row-2,col,ship,"V"))
+                              
         for ship in ships:
             for row in range(10):
                 for col in range(10):
@@ -289,6 +336,7 @@ class Bimaru(Problem):
                         if state.board.canPlaceShip(row,col,ship,"V"):
                             actionsList.append((row,col,ship,"V"))
         
+        print(actionsList)
         return actionsList
 
     def result(self, state: BimaruState, action):
