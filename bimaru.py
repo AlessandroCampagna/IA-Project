@@ -2,9 +2,9 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes já definidas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
+# Grupo 26:
+# 106751 Alessandro Campagna
+# 103619 Tomás Morais
 
 import sys
 import numpy as np
@@ -36,10 +36,11 @@ class BimaruState:
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
     
-    def __init__(self, rows, columns, ships, board):
+    def __init__(self, rows, columns, hints, ships, board):
         
         self._rows = rows
         self._columns = columns
+        self._hints = hints
         self._ships = ships
         self._board = board
         
@@ -96,10 +97,10 @@ class Board:
         hintNum = int(lines[2])
 
         # Get the Hints
-        hints = np.zeros(hintNum, dtype=object)
+        hints = []
         for i in range(hintNum):
             hintLine = lines[3+i].split()
-            hints[i] = ((int(hintLine[1]), int(hintLine[2]), hintLine[3]))
+            hints.append((int(hintLine[1]), int(hintLine[2]), hintLine[3]))
             
         for hint in hints:
             board[hint[0]][hint[1]] = hint[2]
@@ -107,7 +108,7 @@ class Board:
                 rows[hint[0]]-=1
                 columns[hint[1]]-=1
 
-        return Board(rows,columns,[4,3,3,2,2,2,1,1,1,1],board)
+        return Board(rows,columns,hints,[4,3,3,2,2,2,1,1,1,1],board)
     
     def output(self):
         for r in range(10):
@@ -154,7 +155,7 @@ class Board:
     def hintedFreeShipPlacement(self, row, col, ship, orientation):
         
         if orientation == None:
-            return self.freeCell(row, col) or self.get_value(row, col) == "C"
+            return self.get_value(row, col) == "C"
         
         elif orientation == "H":
             return (self._rows[row] >= ship - self.numHintsShipPlacement(row,col,ship,orientation) and 
@@ -251,10 +252,11 @@ class Board:
     def copy(self):
         rows_copy = self._rows.copy()
         columns_copy = self._columns.copy()
+        hints_copy = self._hints.copy()
         ships_copy = self._ships.copy()
         board_copy = self._board.copy()
 
-        return Board(rows_copy, columns_copy, ships_copy, board_copy)
+        return Board(rows_copy, columns_copy, hints_copy, ships_copy, board_copy)
 
     def isGoal(self):
         return self._ships == [] 
@@ -293,50 +295,58 @@ class Bimaru(Problem):
         partir do estado passado como argumento."""
         
         actionsList = []
-        ships = sorted(set(state.board._ships), reverse=True)
+        ship = state.board._ships[0]
         
-        for ship in ships:
-            for row in range(10):
-                for col in range(10):
-                    
-                    value = state.board.get_value(row, col)
-                    if ship == 1:
-                        if value == "C":
-                            actionsList.append((row,col,1,None))
-                    else:
-                        if value == "L" and state.board.hintedCanPlaceShip(row,col,ship,"H"):
-                            actionsList.append((row,col,ship,"H"))
-                        elif value == "R" and state.board.hintedCanPlaceShip(row,col-ship+1,ship,"H"):
-                            actionsList.append((row,col-ship+1,ship,"H"))
-                        elif value == "T" and state.board.hintedCanPlaceShip(row,col,ship,"V"):
-                            actionsList.append((row,col,ship,"V"))
-                        elif value == "B" and state.board.hintedCanPlaceShip(row-ship+1,col,ship,"V"):
-                            actionsList.append((row-ship+1,col,ship,"V"))
-                        elif value == "M":
-                            if ship == 3:
-                                if state.board.hintedCanPlaceShip(row,col-1,ship,"H"):
-                                    actionsList.append((row,col-1,ship,"H"))
-                                if state.board.hintedCanPlaceShip(row-1,col,ship,"V"):
-                                    actionsList.append((row-1,col,ship,"V"))
-                            if ship == 4:
-                                if state.board.hintedCanPlaceShip(row,col-2,ship,"H"):
-                                    actionsList.append((row,col-2,ship,"H"))
-                                if state.board.hintedCanPlaceShip(row-2,col,ship,"V"):
-                                    actionsList.append((row-2,col,ship,"V"))
-                              
-        for ship in ships:
-            for row in range(10):
-                for col in range(10):
+        for hint in state.board._hints:
+            row = hint[0]
+            col = hint[1]
+            value = hint[2]
+            
+            if ship == 1:
+                if value == "C":
+                    actionsList.append((row,col,1,None, hint))
+    
+            else:
+                if value == "L" and state.board.hintedCanPlaceShip(row,col,ship,"H"):
+                    actionsList.append((row,col,ship,"H", hint))
+    
+                elif value == "R" and state.board.hintedCanPlaceShip(row,col-ship+1,ship,"H"):
+                    actionsList.append((row,col-ship+1,ship,"H", hint))
+    
+                elif value == "T" and state.board.hintedCanPlaceShip(row,col,ship,"V"):
+                    actionsList.append((row,col,ship,"V", hint))
+    
+                elif value == "B" and state.board.hintedCanPlaceShip(row-ship+1,col,ship,"V"):
+                    actionsList.append((row-ship+1,col,ship,"V", hint))
+    
+                elif value == "M":
+                    if ship == 3:
+                        if state.board.hintedCanPlaceShip(row,col-1,ship,"H"):
+                            actionsList.append((row,col-1,ship,"H", hint))
+            
+                        if state.board.hintedCanPlaceShip(row-1,col,ship,"V"):
+                            actionsList.append((row-1,col,ship,"V", hint))
+            
+                    if ship == 4:
+                        if state.board.hintedCanPlaceShip(row,col-2,ship,"H"):
+                            actionsList.append((row,col-2,ship,"H",hint))
+            
+                        if state.board.hintedCanPlaceShip(row-2,col,ship,"V"):
+                            actionsList.append((row-2,col,ship,"V",hint))
+            
+                            
+        for row in range(10):
+            for col in range(10):
+                if state.board.freeCell(row,col):
                     if ship == 1:
                         if state.board.canPlaceShip(row,col,ship,None):
-                            actionsList.append((row,col,ship,None))
+                            actionsList.append((row,col,ship,None,None))
                     else :
                         if state.board.canPlaceShip(row,col,ship,"H"):
-                            actionsList.append((row,col,ship,"H"))
+                            actionsList.append((row,col,ship,"H", None))
                         if state.board.canPlaceShip(row,col,ship,"V"):
-                            actionsList.append((row,col,ship,"V"))
+                            actionsList.append((row,col,ship,"V", None))
         
-        print(actionsList)
         return actionsList
 
     def result(self, state: BimaruState, action):
@@ -348,13 +358,9 @@ class Bimaru(Problem):
         board = state.board.copy()
         board.placeShip(action[0], action[1], action[2], action[3])
         
-        """
-        if action[3] == None:
-            print(state.state_id)
-            print(action)
-            print(board._ships)
-            board.print()
-        """
+        if action[4] != None:
+            board._hints.remove(action[4])
+        
         
         return BimaruState(board)
 
@@ -367,10 +373,8 @@ class Bimaru(Problem):
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*."""
-        # TODO
         pass
 
-    # TODO: outros metodos da classe
 
 
 if __name__ == "__main__":
