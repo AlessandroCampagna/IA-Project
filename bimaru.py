@@ -275,10 +275,11 @@ class Bimaru(Problem):
         partir do estado passado como argumento."""
         
         actionsList = []
+        ships = set(state.board._ships)
         
-        for row in range(10):
-            for col in range(10):
-                for ship in state.board._ships:
+        for ship in ships:
+            for row in range(10):
+                for col in range(10):
                     if ship == 1:
                         if state.board.canPlaceShip(row,col,ship,None):
                             actionsList.append((row,col,ship,None))
@@ -298,10 +299,15 @@ class Bimaru(Problem):
         
         board = state.board.copy()
         board.placeShip(action[0], action[1], action[2], action[3])
-        print(action)
-        print(board._ships)
-        board.print()
-    
+        
+        """
+        if action[3] == None:
+            print(state.state_id)
+            print(action)
+            print(board._ships)
+            board.print()
+        """
+        
         return BimaruState(board)
 
     def goal_test(self, state: BimaruState):
@@ -327,11 +333,9 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     
     board = Board.parse_instance()
-    board.print()
+    
     bimaru = Bimaru(board)
-    board.print()
-    
-    
+
     goal = depth_first_tree_search(bimaru)
-    print(goal.state.board.output())
+    goal.state.board.output()
     
