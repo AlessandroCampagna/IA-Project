@@ -278,39 +278,6 @@ class Bimaru(Problem):
         
         for row in range(10):
             for col in range(10):
-                value = state.board.get_value(row, col)
-                if value == "C":
-                    if 1 in state.board._ships:
-                        actionsList.append((row,col,1,None))
-                elif value == "L":
-                    for ship in range(2,5):
-                        if ship in state.board._ships and state.board.canPlaceShip(row,col,ship,"H"):
-                            actionsList.append((row,col,ship,"H"))
-                elif value == "R":
-                    for ship in range(2,5):
-                        if ship in state.board._ships and state.board.canPlaceShip(row,col-ship+1,ship,"H"):
-                            actionsList.append((row,col-ship+1,ship,"H"))
-                elif value == "T":
-                    for ship in range(2,5):
-                        if ship in state.board._ships and state.board.canPlaceShip(row,col,ship,"V"):
-                            actionsList.append((row,col,ship,"V"))
-                elif value == "B":
-                    for ship in range(2,5):
-                        if ship in state.board._ships and state.board.canPlaceShip(row-ship+1,col,ship,"V"):
-                            actionsList.append((row-ship+1,col,ship,"V"))
-                elif value == "M":
-                    for ship in range(2,5):
-                        if ship in state.board._ships and state.board.canPlaceShip(row,col-1,ship,"H"):
-                            actionsList.append((row,col-1,ship,"H"))
-                        if ship in state.board._ships and state.board.canPlaceShip(row-1,col,ship,"V"):
-                            actionsList.append((row-1,col,ship,"V"))
-                    if 4 in state.board._ships and state.board.canPlaceShip(row,col-2,4,"H"):
-                        actionsList.append((row,col-2,4,"H"))
-                    if 4 in state.board._ships and state.board.canPlaceShip(row-2,col,4,"V"):
-                        actionsList.append((row-2,col,4,"V"))
-        
-        for row in range(10):
-            for col in range(10):
                 for ship in state.board._ships:
                     if ship == 1:
                         if state.board.canPlaceShip(row,col,ship,None):
