@@ -103,6 +103,9 @@ class Board:
             
         for hint in hints:
             board[hint[0]][hint[1]] = hint[2]
+            if hint[2] != "W":
+                rows[hint[0]]-=1
+                columns[hint[1]]-=1
 
         return Board(rows,columns,[4,3,3,2,2,2,1,1,1,1],board)
     
@@ -118,6 +121,19 @@ class Board:
     def inBounds (self, row, col):
         return row >= 0 and row < 10 and col >= 0 and col < 10
     
+    def numHintsShipPlacement(self, row, col, ship, orientation):
+        count = 0
+        for i in range(ship):
+            if orientation == "H":
+                value = self.get_value(row, col+i)
+                if value in ["L","R","M"]:
+                    count+=1
+            elif orientation == "V":
+                value = self.get_value(row+i, col)
+                if value in ["T","B","M"]:
+                    count+=1
+        return count
+    
     def freeCell(self, row, col):
         
         return self.inBounds(row, col) and self.get_value(row, col) == None and self._rows[row] > 0 and self._columns[col] > 0
@@ -128,13 +144,13 @@ class Board:
             return self.freeCell(row, col) or self.get_value(row, col) == "C"
         
         elif orientation == "H":
-            return (self._rows[row] >= ship and 
+            return (self._rows[row] >= ship - self.numHintsShipPlacement(row,col,ship,orientation) and 
                     (self.freeCell(row, col) or self.get_value(row, col) == "L") and
                     (self.freeCell(row, col+ship-1) or self.get_value(row, col+ship-1) == "R") and
                     all(self.freeCell(row, c) or self.get_value(row, c) == "M" for c in range(col+1, col+ship-1)))
         
         elif orientation == "V":
-            return (self._columns[col] >= ship and
+            return (self._columns[col] >= ship - self.numHintsShipPlacement(row,col,ship,orientation) and
                     (self.freeCell(row, col) or self.get_value(row, col) == "T") and
                     (self.freeCell(row+ship-1, col) or self.get_value(row+ship-1, col) == "B") and
                     all(self.freeCell(r, col) or self.get_value(r, col) == "M" for r in range(row+1, row+ship-1)))
@@ -210,6 +226,9 @@ class Board:
                             self.placeCell(r,c,"m")
         
         self._ships.remove(ship)
+        if self._ships == []:
+            for r in range(10):
+                self.fillRow(r)
 
     def copy(self):
         rows_copy = self._rows.copy()
@@ -259,6 +278,39 @@ class Bimaru(Problem):
         
         for row in range(10):
             for col in range(10):
+                value = state.board.get_value(row, col)
+                if value == "C":
+                    if 1 in state.board._ships:
+                        actionsList.append((row,col,1,None))
+                elif value == "L":
+                    for ship in range(2,5):
+                        if ship in state.board._ships and state.board.canPlaceShip(row,col,ship,"H"):
+                            actionsList.append((row,col,ship,"H"))
+                elif value == "R":
+                    for ship in range(2,5):
+                        if ship in state.board._ships and state.board.canPlaceShip(row,col-ship+1,ship,"H"):
+                            actionsList.append((row,col-ship+1,ship,"H"))
+                elif value == "T":
+                    for ship in range(2,5):
+                        if ship in state.board._ships and state.board.canPlaceShip(row,col,ship,"V"):
+                            actionsList.append((row,col,ship,"V"))
+                elif value == "B":
+                    for ship in range(2,5):
+                        if ship in state.board._ships and state.board.canPlaceShip(row-ship+1,col,ship,"V"):
+                            actionsList.append((row-ship+1,col,ship,"V"))
+                elif value == "M":
+                    for ship in range(2,5):
+                        if ship in state.board._ships and state.board.canPlaceShip(row,col-1,ship,"H"):
+                            actionsList.append((row,col-1,ship,"H"))
+                        if ship in state.board._ships and state.board.canPlaceShip(row-1,col,ship,"V"):
+                            actionsList.append((row-1,col,ship,"V"))
+                    if 4 in state.board._ships and state.board.canPlaceShip(row,col-2,4,"H"):
+                        actionsList.append((row,col-2,4,"H"))
+                    if 4 in state.board._ships and state.board.canPlaceShip(row-2,col,4,"V"):
+                        actionsList.append((row-2,col,4,"V"))
+        
+        for row in range(10):
+            for col in range(10):
                 for ship in state.board._ships:
                     if ship == 1:
                         if state.board.canPlaceShip(row,col,ship,None):
@@ -279,7 +331,10 @@ class Bimaru(Problem):
         
         board = state.board.copy()
         board.placeShip(action[0], action[1], action[2], action[3])
-        
+        print(action)
+        print(board._ships)
+        board.print()
+    
         return BimaruState(board)
 
     def goal_test(self, state: BimaruState):
@@ -298,16 +353,16 @@ class Bimaru(Problem):
 
 
 if __name__ == "__main__":
-    # TODO:
+
     # Ler o ficheiro do standard input,
     # Usar uma técnica de procura para resolver a instância,
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
     
     board = Board.parse_instance()
-    
+    board.print()
     bimaru = Bimaru(board)
-    
+    board.print()
     
     
     goal = depth_first_tree_search(bimaru)
