@@ -36,14 +36,14 @@ class BimaruState:
 class Board:
     """Representação interna de um tabuleiro de Bimaru."""
     
-    def __init__(self, rows, columns, hints, ships, board):
+    def __init__(self, rows, columns, hints, ships, board, freeCells):
         
         self._rows = rows
         self._columns = columns
         self._hints = hints
         self._ships = ships
         self._board = board
-        
+        self._freeCells = freeCells
 
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
@@ -107,8 +107,14 @@ class Board:
             if hint[2] != "W":
                 rows[hint[0]]-=1
                 columns[hint[1]]-=1
+                
+        freeCells = []
+        for r in range(10):
+            for c in range(10):
+                if board[r][c] == None:
+                    freeCells.append((r,c))
 
-        return Board(rows,columns,hints,[4,3,3,2,2,2,1,1,1,1],board)
+        return Board(rows,columns,hints,[4,3,3,2,2,2,1,1,1,1],board,freeCells)
     
     def output(self):
         for r in range(10):
@@ -183,24 +189,27 @@ class Board:
         
     
     def canPlaceShip(self, row, col, ship, orientation):
-        return self.validSurrounding(row, col, ship, orientation) and self.freeShipPlacement(row, col,ship,orientation)
+        return self.freeShipPlacement(row, col,ship,orientation) and self.validSurrounding(row, col, ship, orientation) 
     
     def hintedCanPlaceShip(self, row, col, ship, orientation):
-        return self.validSurrounding(row, col, ship, orientation) and self.hintedFreeShipPlacement(row, col, ship, orientation)
+        return self.hintedFreeShipPlacement(row, col, ship, orientation) and self.validSurrounding(row, col, ship, orientation) 
         
     
     def fillRow(self,row):
         for c in range(10):
             if self.get_value(row, c) == None:
                 self._board[row][c] = "w"
+                self._freeCells.remove((row,c))
                 
     def fillColumn(self,col):
         for r in range(10):
             if self.get_value(r, col) == None:
                 self._board[r][col] = "w"
+                self._freeCells.remove((r,col))
 
     def placeCell(self, row, col, cell):
         self._board[row][col] = cell
+        self._freeCells.remove((row,col))
         self._rows[row] -= 1
         self._columns[col] -= 1
         if self._rows[row] <= 0:
@@ -217,6 +226,7 @@ class Board:
                 for c in range(col-1, col+2):
                     if self.inBounds(r, c) and self.get_value(r, c) == None:
                         self._board[r][c] = "w"
+                        self._freeCells.remove((r,c))
     
         elif orientation == "H":
             for r in range (row-1, row+2):
@@ -224,6 +234,7 @@ class Board:
                     if self.inBounds(r, c) and self.get_value(r, c) == None:
                         if not (r==row and c >= col and c < col+ship):
                             self._board[r][c] = "w"
+                            self._freeCells.remove((r,c))
                         elif c == col and self._board[r][c] == None:
                             self.placeCell(r,c,"l")
                         elif c == col+ship-1 and self._board[r][c] == None:
@@ -237,6 +248,7 @@ class Board:
                     if self.inBounds(r, c) and self.get_value(r, c) == None:
                         if not (c==col and r >= row and r < row+ship):
                             self._board[r][c] = "w"
+                            self._freeCells.remove((r,c))
                         elif r == row and self._board[r][c] == None:
                             self.placeCell(r,c,"t")
                         elif r == row+ship-1 and self._board[r][c] == None:
@@ -255,8 +267,9 @@ class Board:
         hints_copy = self._hints.copy()
         ships_copy = self._ships.copy()
         board_copy = self._board.copy()
+        freeCells_copy = self._freeCells.copy()
 
-        return Board(rows_copy, columns_copy, hints_copy, ships_copy, board_copy)
+        return Board(rows_copy, columns_copy, hints_copy, ships_copy, board_copy, freeCells_copy)
 
     def isGoal(self):
         return self._ships == [] 
@@ -335,18 +348,19 @@ class Bimaru(Problem):
                             actionsList.append((row-2,col,ship,"V",hint))
             
                             
-        for row in range(10):
-            for col in range(10):
-                if state.board.freeCell(row,col):
-                    if ship == 1:
-                        if state.board.canPlaceShip(row,col,ship,None):
-                            actionsList.append((row,col,ship,None,None))
-                    else :
-                        if state.board.canPlaceShip(row,col,ship,"H"):
-                            actionsList.append((row,col,ship,"H", None))
-                        if state.board.canPlaceShip(row,col,ship,"V"):
-                            actionsList.append((row,col,ship,"V", None))
+        for (row,col) in state.board._freeCells:
+            if state.board.freeCell(row,col):
+                if ship == 1:
+                    if state.board.canPlaceShip(row,col,ship,None):
+                        actionsList.append((row,col,ship,None,None))
+                else :
+                    if state.board.canPlaceShip(row,col,ship,"H"):
+                        actionsList.append((row,col,ship,"H", None))
+                    if state.board.canPlaceShip(row,col,ship,"V"):
+                        actionsList.append((row,col,ship,"V", None))
         
+        np.random.seed(5712547)
+        np.random.shuffle(actionsList)
         return actionsList
 
     def result(self, state: BimaruState, action):
